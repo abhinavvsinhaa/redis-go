@@ -4,22 +4,37 @@ import (
 	"io"
 	"log"
 	"net"
+	"strings"
 
 	"github.com/abhinavvsinhaa/redis-go/config"
+	"github.com/abhinavvsinhaa/redis-go/core"
 )
 
-func readCommand(conn net.Conn) (string, error) {
+func readCommand(conn net.Conn) (*core.RedisCmd, error) {
 	buf := make([]byte, 1024)
 	n, err := conn.Read(buf) // n: number of bytes read
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(buf[:n]), nil // Convert the byte slice to a string and return it
+
+	tokens, err := core.DecodeArrayString(buf[:n])
+	if err != nil {
+		return nil, err
+	}
+
+	return &core.RedisCmd{
+		Command: strings.ToUpper(tokens[0]),
+		Args:    tokens[1:],
+	}, nil
 }
 
-func respond(conn net.Conn, cmd string) error {
-	_, err := conn.Write([]byte(cmd))
-	return err
+func respond(conn net.Conn, cmd *core.RedisCmd) {
+	response, err := core.EvalAndRespond(conn, cmd)
+	if err != nil {
+		conn.Write([]byte(core.EncodeError(err)))
+		return
+	}
+	conn.Write(response)
 }
 
 func RunSyncTCPServer() {
@@ -62,9 +77,7 @@ func RunSyncTCPServer() {
 			}
 
 			log.Println("Received command:", cmd)
-			if err := respond(conn, cmd); err != nil {
-				log.Println("Error responding to client:", conn.RemoteAddr(), ", err:", err)
-			}
+			respond(conn, cmd)
 		}
 	}
 }

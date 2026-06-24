@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"fmt"
 )
 
 func readLength(data []byte) (int, int) {
@@ -56,7 +57,7 @@ func readBulkString(data []byte) (string, int, error) {
 	return string(data[pos : pos+len]), pos + len + 2, nil
 }
 
-func readArray(data []byte) (interface{}, int, error) {
+func readArray(data []byte) ([]interface{}, int, error) {
 	// Arrays are prefixed with a '*' character, followed by the number of elements in the array, and terminated by '\r\n'
 	// *2\r\n$3\r\nfoo\r\n$3\r\nbar\r\n
 	var pos = 1
@@ -100,4 +101,59 @@ func Decode(data []byte) (interface{}, error) {
 	}
 	value, _, err := DecodeOne(data)
 	return value, err
+}
+
+func DecodeArrayString(data []byte) ([]string, error) {
+	value, err := Decode(data)
+	if err != nil {
+		return nil, err
+	}
+
+	array, ok := value.([]interface{})
+	if !ok {
+		return nil, errors.New("expected array")
+	}
+
+	result := make([]string, len(array))
+	for i, v := range array {
+		str, ok := v.(string)
+		if !ok {
+			return nil, errors.New("expected string in array")
+		}
+		result[i] = str
+	}
+	return result, nil
+}
+
+func EncodeError(err error) string {
+	return "-" + err.Error() + "\r\n"
+}
+
+func EncodeSimpleString(s string) string {
+	return "+" + s + "\r\n"
+}
+
+func EncodeBulkString(s string) string {
+	return fmt.Sprintf("$%d\r\n%s\r\n", len(s), s)
+}
+
+func EncodeInt64(i int64) string {
+	return fmt.Sprintf(":%d\r\n", i)
+}
+
+type SimpleString string
+
+func Encode(value interface{}) string {
+	switch v := value.(type) {
+	case SimpleString:
+		return EncodeSimpleString(string(v))
+	case string:
+		return EncodeBulkString(v)
+	case int64:
+		return EncodeInt64(v)
+	case error:
+		return EncodeError(v)
+	default:
+		return EncodeError(errors.New("unknown type"))
+	}
 }
