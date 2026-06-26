@@ -142,9 +142,12 @@ func EncodeInt64(i int64) string {
 }
 
 type SimpleString string
+type NilString struct{}
 
 func Encode(value interface{}) string {
 	switch v := value.(type) {
+	case NilString:
+		return "$-1\r\n"
 	case SimpleString:
 		return EncodeSimpleString(string(v))
 	case string:
