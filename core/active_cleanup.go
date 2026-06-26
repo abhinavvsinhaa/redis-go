@@ -28,10 +28,15 @@ func expireSample() float64 {
 }
 
 func ActiveCleanup() {
-	expiredRatio := expireSample()
-	if expiredRatio > 0.25 {
-		// If more than 25% of the sampled keys are expired, we can run another cleanup immediately
-		ActiveCleanup()
+	start := time.Now()
+	for {
+		expiredRatio := expireSample()
+		if expiredRatio <= 0.25 {
+			break
+		}
+		if time.Since(start) > 25*time.Millisecond {
+			break
+		}
 	}
 	log.Println("Active cleanup completed. Total keys remaining:", len(store))
 }

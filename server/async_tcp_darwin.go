@@ -77,8 +77,9 @@ func RunAsyncTCPServer() error {
 			core.ActiveCleanup()
 			lastActiveCleanupTime = time.Now()
 		}
-		// wait for events
-		nevents, err := syscall.Kevent(kqFD, nil, events, nil)
+		// wait for events, with 1s timeout so cleanup can run even when idle
+		timeout := syscall.NsecToTimespec(int64(time.Second))
+		nevents, err := syscall.Kevent(kqFD, nil, events, &timeout)
 		if err != nil {
 			log.Println("Error while waiting on kqueue", err)
 			continue
