@@ -10,7 +10,7 @@ import (
 	"github.com/abhinavvsinhaa/redis-go/core"
 )
 
-func readCommand(conn net.Conn) (*core.RedisCmd, error) {
+func readCommand(conn io.ReadWriter) (*core.RedisCmd, error) {
 	buf := make([]byte, 1024)
 	n, err := conn.Read(buf) // n: number of bytes read
 	if err != nil {
@@ -28,7 +28,7 @@ func readCommand(conn net.Conn) (*core.RedisCmd, error) {
 	}, nil
 }
 
-func respond(conn net.Conn, cmd *core.RedisCmd) {
+func respond(conn io.ReadWriter, cmd *core.RedisCmd) {
 	response, err := core.EvalAndRespond(conn, cmd)
 	if err != nil {
 		conn.Write([]byte(core.EncodeError(err)))

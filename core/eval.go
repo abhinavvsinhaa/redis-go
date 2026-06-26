@@ -2,7 +2,7 @@ package core
 
 import (
 	"errors"
-	"net"
+	"io"
 )
 
 func EvalPing(cmd *RedisCmd) []byte {
@@ -16,7 +16,7 @@ func EvalPing(cmd *RedisCmd) []byte {
 
 }
 
-func EvalAndRespond(conn net.Conn, cmd *RedisCmd) ([]byte, error) {
+func EvalAndRespond(conn io.ReadWriter, cmd *RedisCmd) ([]byte, error) {
 	switch cmd.Command {
 	case "PING":
 		return EvalPing(cmd), nil

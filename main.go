@@ -7,5 +7,5 @@ import (
 
 func main() {
 	config.Init()
-	server.RunSyncTCPServer()
+	server.RunAsyncTCPServer()
 }
