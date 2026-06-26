@@ -41,3 +41,7 @@ func Get(key string) (*Obj, bool) {
 
 	return obj, true
 }
+
+func Delete(key string) {
+	delete(store, key)
+}
