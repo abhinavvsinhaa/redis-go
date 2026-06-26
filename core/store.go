@@ -1,6 +1,7 @@
 package core
 
 import (
+	"log"
 	"time"
 )
 
@@ -35,7 +36,9 @@ func Get(key string) (*Obj, bool) {
 	}
 
 	if obj.ExpiresAt != -1 && time.Now().UnixMilli() > obj.ExpiresAt {
-		// Todo: Remove the key from the store if it has expired
+		log.Println("Key has expired:", key)
+		Delete(key) // Key has expired, remove it from the store, passive cleanup
+		log.Println("Key deleted during passive cleanup:", key)
 		return nil, false
 	}
 

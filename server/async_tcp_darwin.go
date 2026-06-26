@@ -6,10 +6,14 @@ import (
 	"log"
 	"net"
 	"syscall"
+	"time"
 
 	"github.com/abhinavvsinhaa/redis-go/config"
 	"github.com/abhinavvsinhaa/redis-go/core"
 )
+
+var lastActiveCleanupTime time.Time = time.Now()
+var activeCleanupInterval time.Duration = 1 * time.Second
 
 func RunAsyncTCPServer() error {
 	log.Println("starting an asynchronous TCP server on", config.Addr())
@@ -67,6 +71,12 @@ func RunAsyncTCPServer() error {
 	conn_clients := 0
 
 	for {
+		// Perform active cleanup if the interval has passed, and delete expired keys from the store
+		if time.Since(lastActiveCleanupTime) > activeCleanupInterval {
+			log.Println("Performing active cleanup...")
+			core.ActiveCleanup()
+			lastActiveCleanupTime = time.Now()
+		}
 		// wait for events
 		nevents, err := syscall.Kevent(kqFD, nil, events, nil)
 		if err != nil {
